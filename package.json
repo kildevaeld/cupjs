@@ -1,0 +1,40 @@
+{
+  "name": "cupjs",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel": "^5.8.23",
+    "debug": "^2.2.0",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^5.2.1",
+    "gulp-traceur": "^0.17.1",
+    "gulp-typescript": "^2.8.1",
+    "merge2": "^0.3.6",
+    "typescript-register": "^1.1.0"
+  },
+  "dependencies": {
+    "babel-core": "^5.8.23",
+    "co": "^4.6.0",
+    "di": "git://github.com/kildevaeld/dijs.git",
+    "koa": "^1.0.0",
+    "koa-body-parsers": "^1.1.0",
+    "koa-compose": "^2.3.0",
+    "koa-conditional-get": "^1.0.3",
+    "koa-etag": "^2.0.0",
+    "koa-methodoverride": "^0.4.2",
+    "koa-qs": "^2.0.0",
+    "koa-static": "^1.4.9",
+    "methods": "^1.1.1",
+    "mz": "^2.0.0",
+    "native-or-bluebird": "^1.2.0",
+    "object-assign": "^4.0.1",
+    "path-to-regexp": "^1.2.1",
+    "typescript": "^1.5.3"
+  }
+}

@@ -57,9 +57,9 @@ export function del(pattern:string|RegExp): MethodDecorator {
 	return route('DELETE', pattern);
 }
 
-export function service(): ClassDecorator {
+export function service(name?:string): ClassDecorator {
 	return function <TFunction extends Function>(target: TFunction): TFunction | void {
-		Metadata.define(mServiceKey, target.name, target, undefined)
+		Metadata.define(mServiceKey, name||target.name, target, undefined)
 		return void 0
 	}
 }

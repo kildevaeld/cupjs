@@ -10,4 +10,4 @@ export declare function get(pattern: string | RegExp, ...midddlewares: Function[
 export declare function put(pattern: string | RegExp): MethodDecorator;
 export declare function post(pattern: string | RegExp): MethodDecorator;
 export declare function del(pattern: string | RegExp): MethodDecorator;
-export declare function service(): ClassDecorator;
+export declare function service(name?: string): ClassDecorator;

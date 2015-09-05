@@ -3,7 +3,7 @@ import * as utils from './utils'
 import {Server} from 'http'
 import Koa from 'koa'
 import co from './co'
-import {toPromise} from './co'
+import {toPromise,isPromise} from './co'
 import {Context,IContext} from './context'
 import compose from 'koa-compose'
 import {Router} from './router/index'
@@ -12,11 +12,31 @@ import {mRouteKey,mServiceKey,RouteDescription} from './annotations'
 
 import {Tasks, ITask} from './tasks'
 
+const checkReg = /request|req|ctx|context|response|res/i
+
 export interface ControllerOptions {
   controllers?:string
   initializers?:string
   routes?:string
   services?:string
+}
+
+class ServiceActivator {
+  app: Application
+  constructor(app:Application) {
+    this.app = app
+  }
+
+  invoke(fn:Function, deps:any[], keys?:any[]): any {
+
+    var instance = new fn(deps);
+
+    if (instance.$instance) {
+      instance = instance.$instance
+    }
+
+    return instance;
+  }
 }
 
 export class Application extends Koa {
@@ -25,7 +45,9 @@ export class Application extends Koa {
   private _router: Router
   private _context: IContext
   private _container: DIContainer
+  private _serviceActivator: ServiceActivator
   config: ControllerOptions
+
 
   constructor(config:ControllerOptions = {}) {
     super()
@@ -33,9 +55,19 @@ export class Application extends Koa {
     this._router = new Router()
     this._container = new DIContainer();
     this.config = config
+    this._serviceActivator = new ServiceActivator(this);
   }
 
-  register(fn: FunctionConstructor): Application {
+  register(name?:string, fn: FunctionConstructor): Application {
+
+    if (arguments.length === 1) {
+      fn = name;
+      name = fn.name;
+    }
+
+    if (typeof fn !== 'function') {
+      throw new Error('alredy function can be registered');
+    }
 
     let routes = <RouteDescription[]>Metadata.getOwn(mRouteKey, fn)
 
@@ -47,7 +79,8 @@ export class Application extends Koa {
     let service = <any>Metadata.getOwn(mServiceKey, fn)
 
     if (service) {
-      let name = utils.camelize(fn.name)
+      name = utils.camelize(name)
+      Metadata.define(Metadata.instanceActivator, this._serviveActivator,fn)
 
       this._container.registerSingleton(name, fn)
 
@@ -66,7 +99,17 @@ export class Application extends Koa {
     return this._container.get(service);
   }
 
+  registerService(name?:string, fn:Function) {
+    if (arguments.length === 1) {
+      fn = name;
+      name = fn.name;
+    }
+    name = utils.camelize(name)
 
+    Metadata.define(Metadata.instanceActivator, this._serviceActivator,fn)
+
+    this._container.registerSingleton(name, fn)
+  }
 
   /**
    * Use middlewares
@@ -92,36 +135,41 @@ export class Application extends Koa {
     if (this.__initialized)
       return Promise.resolve(this);
 
+    var self = this
 
     return co(function *() {
 
       let tasks = new Tasks({serial:true})
       yield tasks.addFromPath(__dirname + '/tasks')
 
-      var self = this
+      var err
       yield tasks.run( function *(task) {
          yield task(self)
+      }).catch( e => {
+
+        err = e;
       })
+      //console.log(err)
+      if (err != null) throw new Error(err);
+      //yield defaultBoot.call(self);
 
-      //yield defaultBoot.call(this);
+      //self.emit('before:start');
 
-      //this.emit('before:start');
+      //yield self.boot();
 
-      //yield this.boot();
+      self.__initialized = true;
 
-      this.__initialized = true;
+      self.use(self._router.middleware());
 
-      this.use(this._router.middleware());
-
-      //this.emit('start');
+      //self.emit('start');
 
       if (port) {
-        this.listen(port);
+        self.listen(port);
       }
 
-      return this;
+      return self;
 
-    }.bind(this));
+    });
 
 
   }
@@ -159,15 +207,16 @@ export class Application extends Koa {
         let middlewares = route.middlewares.concat([function *(next) {
           let controller = self._container.get(fn)
 
-          console.log('he')
+
           const func = controller[route.action]
+
 
           if (func == null) throw new Error(`controller '${name}' does not have a method called: '${route.action}'`)
 
           let keys = getFunctionParameters(func);
 
           keys = keys.map( x => {
-            if (/request|req|ctx|context|response|res/i.test(x)) {
+            if (checkReg.test(x)) {
               return this
             } else if (x == 'next') {
               return next
@@ -195,23 +244,25 @@ export class Application extends Koa {
         this._router.register(name, route.pattern, [route.method], ...middlewares);
       }
   }
-  
+
   _get_dependencies (fn:Function): Promise<any> {
-    
+
     let keys = getFunctionParameters(fn);
-    
+
     keys = keys.map( k => {
-      
+
+
       let dep = this._container.get(k);
-      
+
       if (dep && typeof dep.run === 'function') {
         return dep.run().then( x => dep);
       }
+
       return dep;
     });
-    
+
     return toPromise(keys)
- 
+
   }
 
 }

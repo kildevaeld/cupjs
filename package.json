@@ -2,7 +2,7 @@
   "name": "cupjs",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,7 +10,6 @@
   "license": "ISC",
   "devDependencies": {
     "babel": "^5.8.23",
-    "debug": "^2.2.0",
     "gulp": "^3.9.0",
     "gulp-babel": "^5.2.1",
     "gulp-traceur": "^0.17.1",
@@ -20,7 +19,7 @@
   },
   "dependencies": {
     "babel-core": "^5.8.23",
-    "co": "^4.6.0",
+    "debug": "^2.2.0",
     "di": "git://github.com/kildevaeld/dijs.git",
     "koa": "^1.0.0",
     "koa-body-parsers": "^1.1.0",
@@ -30,6 +29,7 @@
     "koa-methodoverride": "^0.4.2",
     "koa-qs": "^2.0.0",
     "koa-static": "^1.4.9",
+    "md5-file": "^2.0.3",
     "methods": "^1.1.1",
     "mz": "^2.0.0",
     "native-or-bluebird": "^1.2.0",

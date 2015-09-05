@@ -28,6 +28,7 @@
         "./src/interfaces.ts",
         "./src/utils.ts",
         "./src/co.ts",
+        "./src/cache.ts",
         "./src/router/index.ts",
         "./src/router/route.ts",
 

@@ -10,5 +10,5 @@ const app = new moby.Application({
 app.run(3000).then(function () {
 	console.log(require('util').inspect(app._router, {depth:10,colors:true}))
 }).catch(function (e) {
-	console.log(e.stack)
+	console.log(e)
 })

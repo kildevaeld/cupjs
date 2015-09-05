@@ -4,9 +4,9 @@ const fs = require('mz/fs')
 import co from './co'
 import * as nodePath from 'path'
 import * as utils from './utils'
-//import * as babel from 'babel-core'
+import * as babel from 'babel-core'
 import dbg from 'debug'
-
+import {Cache} from './cache'
 const debug = dbg('cupjs:tasks');;
 
 export interface TasksOptions {
@@ -32,17 +32,17 @@ export class Tasks {
         return co(function *() {
 
         		let queue = [], ret
-            
+
             for (i = 0, ii = tasks.length; i < ii; i++) {
                 task = tasks[i];
-               
+
                 if (iterator) {
                     ret = utils.callFunc(iterator,undefined,[task])
-                   
+
                 } else {
                     ret = utils.callFunc(task,undefined);
                 }
-                
+
                 serial ? (yield ret) : queue.push(ret);
 
             }
@@ -97,7 +97,7 @@ export class Tasks {
                 } else if (Object == data.constructor) {
                     for (let k in data) {
                         if (typeof data[k] === 'function') {
-                            this.tasks.push(data[k]);
+                            self.tasks.push(data[k]);
                         }
                     }
                 }
@@ -108,40 +108,78 @@ export class Tasks {
     }
 
 
+    destroy () {
+        this.tasks = void 0;
+
+    }
+
+
+}
+
+
+const cache = new Cache(nodePath.join(process.cwd(), '.tmp'));
+const md5File = require('md5-file')
+
+function md5Sum (path:string): Promise<string> {
+    return new utils.Promise((resolve, reject) => {
+
+       md5File(path, function (err, sum) {
+           if (err) return reject(err);
+           resolve(sum);
+       })
+
+    })
 }
 
 function *resolveFile(path:string): Promise<any> {
 	let ext = nodePath.extname(path)
 	let basename = nodePath.basename(path, ext)
 	let dirname = nodePath.dirname(path);
-	let tmpFile = nodePath.join(dirname, basename + '.compiled' + ext)
+
+
+    let md5 = yield md5Sum(path);
+
+
+    if (ext !== '.js') return null
+
+	let tmpFile = nodePath.join(dirname, "_" + basename + '.compiled' + ext)
 
 
 	if (yield fs.exists(tmpFile)) {
-		return require(tmpFile);
+
+        if (md5 === cache.get(path)) {
+            return require(tmpFile);
+        }
 	}
 
-  if (ext !== '.js') return null
-
-  let firstline = yield readFirstLine(path)
 
 
 
-  if (/^'use babel'/.test(firstline)) {
-  	debug('use babel')
 
-  	var result = babel.transform(yield fs.readFile(path,'utf8'),{
-  		optional: ['es7.decorators'],
-  		blacklist: ['regenerator']
-  	})
 
-  	yield fs.writeFile(tmpFile, result.code);
+      let firstline = yield readFirstLine(path)
 
-  	path = tmpFile
 
-  }
 
-  return require(path)
+      if (/^'use babel'/.test(firstline)) {
+      	debug('use babel')
+
+      	var result = babel.transform(yield fs.readFile(path,'utf8'),{
+      		optional: ['es7.decorators'],
+      		blacklist: ['regenerator']
+      	})
+
+      	yield fs.writeFile(tmpFile, result.code);
+
+        cache.set(path, md5);
+        yield cache.save()
+
+      	path = tmpFile
+
+
+      }
+
+      return require(path)
 
 }
 

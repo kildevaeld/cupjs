@@ -7,18 +7,18 @@ module.exports = function *Initializers(app:Application) {
 
   let ff = callFunc;
   let initializersPath = app.config.initializers
-  
+
   if (!initializersPath) return
 
   let task = new Tasks({serial:true})
-  
+
   yield task.addFromPath(initializersPath);
-  
-  
+
+
   yield task.run( function * (t) {
-    
-    let deps = app._get_dependencies(t);
-    
+
+    let deps =  yield app._get_dependencies(t);
+
     return yield callFunc(t,app,deps);
   })
 

@@ -1,5 +1,6 @@
 /// <reference path="../interfaces" />
 import {Application} from '../application'
+import * as nodePath from 'path'
 const body = require('koa-body-parsers'),
 	etag = require('koa-etag'),
 	conditional = require('koa-conditional-get'),
@@ -8,25 +9,29 @@ const body = require('koa-body-parsers'),
 	assets = require('koa-static');
 
 export default function *Middlewares (app:Application) {
-	
+
 	body(app);
-	
-	app.use(function *(next) {
-		this.parseBody = function (type?:string, limit?:number) {
+
+	app.context.parseBody = function (type?:string, limit?:number) {
 			switch (type||this.is(['json', 'urlencoded'])) {
         case 'json':
           return this.json(limit);
         case 'urlencoded':
           return this.urlencoded(limit);
       }
-		}
-		
-		yield *next;
-	})
-	
-	
+		};
+
+
 	app.use(method())
 	.use(etag())
 	.use(conditional())
-	.use(assets('public'))
+
+	let path = app.config.public
+
+	if (path) {
+		path = nodePath.resolve(path);
+		path.use(assets(path, {defer:true}))
+	}
+
+
 }

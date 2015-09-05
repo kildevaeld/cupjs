@@ -14,10 +14,12 @@ export declare class Application extends Koa {
     private _router;
     private _context;
     private _container;
+    private _serviceActivator;
     config: ControllerOptions;
     constructor(config?: ControllerOptions);
-    register(fn: FunctionConstructor): Application;
+    register(name?: string, fn: FunctionConstructor): Application;
     service<T extends Function>(service: string | T): T;
+    registerService(name?: string, fn: Function): void;
     /**
      * Use middlewares
      * @param  {...Function} middleware One or more middleware functions

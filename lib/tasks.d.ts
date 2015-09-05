@@ -11,4 +11,5 @@ export declare class Tasks {
     run(iterator?: (tasks: ITask) => Promise<any> | void): Promise<any>;
     add(tasks: ITask[] | ITask): Tasks;
     addFromPath(path: string): Promise<Tasks>;
+    destroy(): void;
 }

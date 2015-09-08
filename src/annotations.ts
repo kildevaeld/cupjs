@@ -2,6 +2,7 @@
 
 import {Metadata, DIContainer} from 'di'
 
+export const mNamespaceKey = "cupjs:namespace"
 export const mRouteKey = "cupjs:route"
 export const mServiceKey = 'cupjs:service'
 
@@ -55,6 +56,13 @@ export function post(pattern:string|RegExp): MethodDecorator {
 
 export function del(pattern:string|RegExp): MethodDecorator {
 	return route('DELETE', pattern);
+}
+
+export function namespace(pattern:string): ClassDecorator {
+	return function <TFunction extends Function>(target: TFunction): TFunction | void {
+		Metadata.define(mNamespaceKey, pattern, target, undefined)
+		return void 0
+	}
 }
 
 export function service(name?:string): ClassDecorator {

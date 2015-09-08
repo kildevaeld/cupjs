@@ -46,7 +46,7 @@ export class Router extends EventEmitter {
       options = parent || {};
     }
 
-    
+
 
     // Namespaces
     this._ns = {};
@@ -334,6 +334,10 @@ export class Router extends EventEmitter {
     }
     return this.rootPath;
   }
+
+  _match (path) {
+   return this._regexp.test(path);
+ }
 }
 
 /**

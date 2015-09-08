@@ -74,4 +74,5 @@ export declare class Router extends EventEmitter {
     url(name: any, ...args: any[]): any;
     rootPath: string;
     qualifiedPath: any;
+    _match(path: any): boolean;
 }

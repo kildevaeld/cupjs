@@ -25,7 +25,7 @@ export class Tasks {
         this.config.serial = options.serial||false
     }
 
-    run(iterator?: (tasks: ITask) => Promise<any>|void): Promise<any> {
+    run(iterator?: ((tasks: ITask) => Promise<any>|void)|Iterator<any>): Promise<any> {
 
         var self = this, i, ii, tasks = this.tasks, task, ret, serial = this.config.serial
 
@@ -37,7 +37,7 @@ export class Tasks {
                 task = tasks[i];
 
                 if (iterator) {
-                    ret = utils.callFunc(iterator,undefined,[task])
+                    ret = utils.callFunc(<any>iterator,undefined,[task])
 
                 } else {
                     ret = utils.callFunc(task,undefined);
@@ -60,9 +60,9 @@ export class Tasks {
     add(tasks: ITask[]|ITask): Tasks {
 
         if (!Array.isArray(tasks)) {
-            tasks = [tasks]
+            tasks =[<ITask>tasks]
         }
-        this.tasks = this.tasks.concat(tasks)
+        this.tasks = this.tasks.concat(<ITask[]>tasks)
         return this
     }
 
@@ -131,7 +131,7 @@ function md5Sum (path:string): Promise<string> {
     })
 }
 
-function *resolveFile(path:string): Promise<any> {
+function *resolveFile(path:string): Iterator<any> {
 	let ext = nodePath.extname(path)
 	let basename = nodePath.basename(path, ext)
 	let dirname = nodePath.dirname(path);

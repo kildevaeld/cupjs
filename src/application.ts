@@ -8,17 +8,22 @@ import {Context,IContext} from './context'
 import compose from 'koa-compose'
 import {Router} from './router/index'
 import {Metadata, DIContainer, getFunctionParameters} from 'di'
-import {mRouteKey,mServiceKey,RouteDescription} from './annotations'
+import {mRouteKey,mServiceKey,RouteDescription,mNamespaceKey} from './annotations'
 
 import {Tasks, ITask} from './tasks'
 
 const checkReg = /request|req|ctx|context|response|res/i
 
-export interface ControllerOptions {
+export interface ApplicationOptionsPaths {
   controllers?:string
   initializers?:string
   routes?:string
   services?:string
+}
+
+export interface ApplicationOptions {
+  paths?: ApplicationOptionsPaths,
+  services?: {[key: string]: any}
 }
 
 class ServiceActivator {
@@ -27,8 +32,26 @@ class ServiceActivator {
     this.app = app
   }
 
-  invoke(fn:Function, deps:any[], keys?:any[]): any {
+  resolveDependencies(fn:Function): any[] {
+    let name = <any>Metadata.getOwn(mServiceKey, fn),
+      params = getFunctionParameters(fn),
+      args = new Array(params.length)
+    let p
+    for (let i=0,ii=args.length;i<ii;i++) {
+      p = params[i]
+      if (p == 'config') {
+        args[i] = this.app.config.services[name]||{}
+      } else {
+        args[i] = this.app._container.get(p)
+      }
 
+    }
+
+    return args
+  }
+
+  invoke(fn:any, deps:any[], keys?:any[]): any {
+    console.log(deps)
     var instance = new fn(deps);
 
     if (instance.$instance) {
@@ -44,24 +67,25 @@ export class Application extends Koa {
   private _server: Server
   private _router: Router
   private _context: IContext
-  private _container: DIContainer
+  _container: DIContainer
   private _serviceActivator: ServiceActivator
-  config: ControllerOptions
+  config: ApplicationOptions
 
 
-  constructor(config:ControllerOptions = {}) {
+  constructor(config:ApplicationOptions = {}) {
     super()
     this._context = Object.create(Context)
     this._router = new Router()
     this._container = new DIContainer();
+    if (!config.paths) config.paths = {}
     this.config = config
     this._serviceActivator = new ServiceActivator(this);
   }
 
-  register(name?:string, fn: FunctionConstructor): Application {
+  register(name?:string|FunctionConstructor, fn?: FunctionConstructor): Application {
 
     if (arguments.length === 1) {
-      fn = name;
+      fn = <FunctionConstructor>name;
       name = fn.name;
     }
 
@@ -69,22 +93,23 @@ export class Application extends Koa {
       throw new Error('alredy function can be registered');
     }
 
-    let routes = <RouteDescription[]>Metadata.getOwn(mRouteKey, fn)
-
-    if (routes) {
-      this._registerRoutes(fn, routes);
-      delete <any>fn.__metadata__[undefined][mRouteKey]
-    }
-
     let service = <any>Metadata.getOwn(mServiceKey, fn)
 
-    if (service) {
-      name = utils.camelize(name)
-      Metadata.define(Metadata.instanceActivator, this._serviveActivator,fn)
 
-      this._container.registerSingleton(name, fn)
+    if (service) {
+
+      this.registerService(service||name, fn)
 
     }
+
+    let routes = <RouteDescription[]>Metadata.getOwn(mRouteKey, fn)
+    let namespace = <string>Metadata.getOwn(mNamespaceKey, fn)
+    if (routes) {
+      this._registerRoutes(fn, routes, namespace);
+      delete (<any>fn).__metadata__.undefined[mRouteKey]
+    }
+
+
 
     return this
 
@@ -99,15 +124,15 @@ export class Application extends Koa {
     return this._container.get(service);
   }
 
-  registerService(name?:string, fn:Function) {
+  registerService(name?:string|Function, fn?:Function) {
     if (arguments.length === 1) {
-      fn = name;
+      fn = <Function>name;
       name = fn.name;
     }
-    name = utils.camelize(name)
-
-    Metadata.define(Metadata.instanceActivator, this._serviceActivator,fn)
-
+    name = utils.camelize(<string>name)
+    Metadata.define(mServiceKey, name, fn, undefined)
+    Metadata.define((<any>Metadata).instanceActivator, this._serviceActivator,fn, undefined)
+    Metadata.define((<any>Metadata).dependencyResolver, this._serviceActivator, fn,undefined)
     this._container.registerSingleton(name, fn)
   }
 
@@ -144,6 +169,7 @@ export class Application extends Koa {
 
       var err
       yield tasks.run( function *(task) {
+
          yield task(self)
       }).catch( e => {
 
@@ -196,7 +222,14 @@ export class Application extends Koa {
   }
 
 
-  _registerRoutes(fn:Function, routes:RouteDescription[]) {
+  _registerRoutes(fn:Function, routes:RouteDescription[], namespace?:string) {
+
+    let router = this._router
+
+    if (namespace && namespace != "" && namespace != '/') {
+      router = this._router.namespace(namespace, null);
+    }
+
     for (let i = 0, ii = routes.length; i < ii; i++) {
         let route = routes[i];
         let name = (fn.name || route.pattern + ':' + route.action).toLowerCase()
@@ -241,7 +274,7 @@ export class Application extends Koa {
           //return ret;
         }]);
 
-        this._router.register(name, route.pattern, [route.method], ...middlewares);
+        router.register(name, route.pattern, [route.method], ...middlewares);
       }
   }
 

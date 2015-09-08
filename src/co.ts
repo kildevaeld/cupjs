@@ -204,7 +204,7 @@ export function objectToPromise(obj){
  * @api private
  */
 
-function isPromise(obj): boolean {
+export function isPromise(obj): boolean {
   return 'function' == typeof obj.then;
 }
 

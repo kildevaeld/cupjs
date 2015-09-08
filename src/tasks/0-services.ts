@@ -2,7 +2,13 @@ import {Application} from '../application'
 import * as NodePath from 'path'
 import {Tasks} from '../tasks'
 import {callFunc} from '../utils'
-module.exports = function *Services(app:Application) {
+//import {Metadata} from 'di'
+//import {mServiceKey} from '../annotations'
+
+const Metadata = require('di').Metadata,
+  mServiceKey = require('../annotations').mServiceKey
+
+export default function *Services(app:Application) {
 
   let ff = callFunc;
   let servicesPath = app.config.services
@@ -16,12 +22,24 @@ module.exports = function *Services(app:Application) {
 
   yield task.run( function * (t) {
 
-    if (typeof t !== 'function') {
+    /*if (typeof t !== 'function') {
       t = () => { return t };
+    }*/
+
+    let sk
+    try {
+        sk = Metadata.getOwn(mServiceKey, t)
+    } catch (e) {
+      console.log(e)
     }
 
-    app.registerService(t);
 
+    if (!sk) {
+        Metadata.define(mServiceKey, t.name, t, undefined)
+    }
+
+    app.register(<any>t);
+  
   })
 
 }

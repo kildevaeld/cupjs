@@ -1,25 +1,32 @@
 /// <reference path="../typings/tsd.d.ts" />
 import { Server } from 'http';
 import Koa from 'koa';
+import { DIContainer } from 'di';
 import { RouteDescription } from './annotations';
-export interface ControllerOptions {
+export interface ApplicationOptionsPaths {
     controllers?: string;
     initializers?: string;
     routes?: string;
     services?: string;
+}
+export interface ApplicationOptions {
+    paths?: ApplicationOptionsPaths;
+    services?: {
+        [key: string]: any;
+    };
 }
 export declare class Application extends Koa {
     private __initialized;
     private _server;
     private _router;
     private _context;
-    private _container;
+    _container: DIContainer;
     private _serviceActivator;
-    config: ControllerOptions;
-    constructor(config?: ControllerOptions);
-    register(name?: string, fn: FunctionConstructor): Application;
+    config: ApplicationOptions;
+    constructor(config?: ApplicationOptions);
+    register(name?: string | FunctionConstructor, fn?: FunctionConstructor): Application;
     service<T extends Function>(service: string | T): T;
-    registerService(name?: string, fn: Function): void;
+    registerService(name?: string | Function, fn?: Function): void;
     /**
      * Use middlewares
      * @param  {...Function} middleware One or more middleware functions
@@ -30,6 +37,6 @@ export declare class Application extends Koa {
     use(...middleware: any[]): Application;
     run(port: number): Promise<Application>;
     listen(port: number, force?: boolean): Server;
-    _registerRoutes(fn: Function, routes: RouteDescription[]): void;
+    _registerRoutes(fn: Function, routes: RouteDescription[], namespace?: string): void;
     _get_dependencies(fn: Function): Promise<any>;
 }

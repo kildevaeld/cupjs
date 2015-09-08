@@ -33,3 +33,11 @@ export declare function arrayToPromise(obj: Array<any>): Promise<any>;
  * @api private
  */
 export declare function objectToPromise(obj: any): Promise<any>;
+/**
+ * Check if `obj` is a promise.
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+export declare function isPromise(obj: any): boolean;

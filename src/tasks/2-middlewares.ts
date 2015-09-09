@@ -2,10 +2,11 @@
 import {Application} from '../application'
 import * as nodePath from 'path'
 const body = require('koa-body-parsers'),
-	etag = require('koa-etag'),
-	conditional = require('koa-conditional-get'),
-	method = require('koa-methodoverride'),
-	qs = require('koa-qs'),
+    etag = require('koa-etag'),
+    conditional = require('koa-conditional-get'),
+    method = require('koa-methodoverride'),
+    qs = require('koa-qs'),
+    render = require('co-views'),
 	assets = require('koa-static');
 
 export default function *Middlewares (app:Application) {
@@ -26,12 +27,13 @@ export default function *Middlewares (app:Application) {
 	.use(etag())
 	.use(conditional())
 
-	let path = app.config.public
-
+	let path = app.config.paths.public
 	if (path) {
 		path = nodePath.resolve(path);
 		path.use(assets(path, {defer:true}))
 	}
+
+
 
 
 }

@@ -19,6 +19,8 @@ export interface ApplicationOptionsPaths {
   initializers?:string
   routes?:string
   services?:string
+  views?:string
+  public?:string
 }
 
 export interface ApplicationOptions {
@@ -51,7 +53,7 @@ class ServiceActivator {
   }
 
   invoke(fn:any, deps:any[], keys?:any[]): any {
-    console.log(deps)
+
     var instance = new fn(deps);
 
     if (instance.$instance) {
@@ -66,7 +68,7 @@ export class Application extends Koa {
   private __initialized: boolean
   private _server: Server
   private _router: Router
-  private _context: IContext
+  private context: IContext
   _container: DIContainer
   private _serviceActivator: ServiceActivator
   config: ApplicationOptions
@@ -74,7 +76,7 @@ export class Application extends Koa {
 
   constructor(config:ApplicationOptions = {}) {
     super()
-    this._context = Object.create(Context)
+    this.context = Object.create(Context)
     this._router = new Router()
     this._container = new DIContainer();
     if (!config.paths) config.paths = {}

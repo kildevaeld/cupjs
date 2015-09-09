@@ -142,7 +142,7 @@ function *resolveFile(path:string): Iterator<any> {
 
     if (ext !== '.js') return null
 
-	let tmpFile = nodePath.join(dirname, "_" + basename + '.compiled' + ext)
+	let tmpFile = nodePath.join(dirname, "." + basename + '.compiled' + ext)
 
 
 	if (yield fs.exists(tmpFile)) {

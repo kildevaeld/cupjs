@@ -8,6 +8,8 @@ export interface ApplicationOptionsPaths {
     initializers?: string;
     routes?: string;
     services?: string;
+    views?: string;
+    public?: string;
 }
 export interface ApplicationOptions {
     paths?: ApplicationOptionsPaths;
@@ -19,7 +21,7 @@ export declare class Application extends Koa {
     private __initialized;
     private _server;
     private _router;
-    private _context;
+    private context;
     _container: DIContainer;
     private _serviceActivator;
     config: ApplicationOptions;

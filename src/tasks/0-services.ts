@@ -11,7 +11,7 @@ const Metadata = require('di').Metadata,
 export default function *Services(app:Application) {
 
   let ff = callFunc;
-  let servicesPath = app.config.services
+  let servicesPath = app.config.paths.services
 
   if (!servicesPath) return
 
@@ -35,11 +35,11 @@ export default function *Services(app:Application) {
 
 
     if (!sk) {
-        Metadata.define(mServiceKey, t.name, t, undefined)
+        Metadata.define(mServiceKey, {name:t.name, async:t.async||false}, t, undefined)
     }
 
     app.register(<any>t);
-  
+
   })
 
 }

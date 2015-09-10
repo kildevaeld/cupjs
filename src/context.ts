@@ -16,11 +16,19 @@ Object.defineProperty(context, 'isXHR', {
   }
 });
 
+export interface Cookie {
+  set(name:string, value:any, options?:any)
+  get(name:string, options?:any)
+}
+
 export interface IContext {
   links(links): IContext
   xhr:boolean
   body:any
   render(template:string,locals?:Object): any
+  cookies: Cookie
+  throw(msg?:string|number, status?:number|string)
+
 }
 
 export var Context : IContext = assign(context, {

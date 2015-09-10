@@ -12,4 +12,4 @@ export declare function put(pattern: string | RegExp): MethodDecorator;
 export declare function post(pattern: string | RegExp): MethodDecorator;
 export declare function del(pattern: string | RegExp): MethodDecorator;
 export declare function namespace(pattern: string): ClassDecorator;
-export declare function service(name?: string): ClassDecorator;
+export declare function service(name?: string, async?: boolean): ClassDecorator;

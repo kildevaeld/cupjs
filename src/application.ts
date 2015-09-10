@@ -9,7 +9,7 @@ import compose from 'koa-compose'
 import {Router} from './router/index'
 import {Metadata, DIContainer, getFunctionParameters} from 'di'
 import {mRouteKey,mServiceKey,RouteDescription,mNamespaceKey} from './annotations'
-
+import ServiceActivator from './service-activator'
 import {Tasks, ITask} from './tasks'
 
 const checkReg = /request|req|ctx|context|response|res/i
@@ -26,42 +26,17 @@ export interface ApplicationOptionsPaths {
 export interface ApplicationOptions {
   paths?: ApplicationOptionsPaths,
   services?: {[key: string]: any}
+  middlewares?: {[key:string]: any}
 }
 
-class ServiceActivator {
-  app: Application
-  constructor(app:Application) {
-    this.app = app
-  }
 
-  resolveDependencies(fn:Function): any[] {
-    let name = <any>Metadata.getOwn(mServiceKey, fn),
-      params = getFunctionParameters(fn),
-      args = new Array(params.length)
-    let p
-    for (let i=0,ii=args.length;i<ii;i++) {
-      p = params[i]
-      if (p == 'config') {
-        args[i] = this.app.config.services[name]||{}
-      } else {
-        args[i] = this.app._container.get(p)
-      }
-
-    }
-
-    return args
-  }
-
-  invoke(fn:any, deps:any[], keys?:any[]): any {
-
-    var instance = new fn(deps);
-
-    if (instance.$instance) {
-      instance = instance.$instance
-    }
-
-    return instance;
-  }
+function normalizeConfig (config:ApplicationOptions = {}): ApplicationOptions {
+  
+  if (!config.paths) config.paths = {}
+  if (!config.services) config.services = {}
+  if (!config.middlewares) config.middlewares = {}
+  
+  return config
 }
 
 export class Application extends Koa {
@@ -72,7 +47,10 @@ export class Application extends Koa {
   _container: DIContainer
   private _serviceActivator: ServiceActivator
   config: ApplicationOptions
-
+  
+  get container () : DIContainer {
+    return this._container
+  }
 
   constructor(config:ApplicationOptions = {}) {
     super()
@@ -100,7 +78,7 @@ export class Application extends Koa {
 
     if (service) {
 
-      this.registerService(service||name, fn)
+      this.registerService(service.name, fn, service.async)
 
     }
 
@@ -126,16 +104,70 @@ export class Application extends Koa {
     return this._container.get(service);
   }
 
-  registerService(name?:string|Function, fn?:Function) {
+  registerService(name?:string|Function, fn?:Function, async:boolean = false) {
     if (arguments.length === 1) {
       fn = <Function>name;
       name = fn.name;
     }
     name = utils.camelize(<string>name)
-    Metadata.define(mServiceKey, name, fn, undefined)
+    Metadata.define(mServiceKey, { name: name, async: async}, fn, undefined)
     Metadata.define((<any>Metadata).instanceActivator, this._serviceActivator,fn, undefined)
     Metadata.define((<any>Metadata).dependencyResolver, this._serviceActivator, fn,undefined)
-    this._container.registerSingleton(name, fn)
+
+
+    let singleton
+    let handlers: ((result) => void)[]
+    this._container.registerHandler(name, c => {
+      if (handlers) {
+        let defer = utils.deferred()
+        handlers.push(defer.resolve);
+        return defer.promise
+      }
+      if (singleton == null) {
+
+        let defer = utils.deferred();
+
+        handlers = [defer.resolve]
+
+        let ret = c.invoke(fn);
+
+        if (!async) {
+          ret = utils.Promise.resolve(ret);
+        }
+
+        return ret.then(function (service) {
+
+          function done(service) {
+            for (let handler of handlers) {
+              handler(service);
+            }
+            singleton = service
+
+            handlers = void 0
+
+            return service
+          }
+
+          if (typeof service.run == 'function') {
+            let ret = service.run()
+
+            if (ret && utils.isPromise(ret)) {
+              return ret.then(function () {
+                return done(service);
+              })
+            }
+          }
+
+          return done(service);
+
+        })
+
+
+
+      }
+
+      return Promise.resolve(singleton);
+    })
   }
 
   /**
@@ -250,30 +282,31 @@ export class Application extends Koa {
 
           let keys = getFunctionParameters(func);
 
+
           keys = keys.map( x => {
             if (checkReg.test(x)) {
-              return this
+              return Promise.resolve(this)
             } else if (x == 'next') {
-              return next
+              return Promise.resolve(next);
             } else if (x == 'params'|| x == 'parameters') {
               return this.params
             } else {
-
-              return self.service(x);
+              return Promise.resolve(self.container.get(x));
             }
           })
-
+           
+          keys = yield keys
+          
           if (func && (utils.isGenerator(func) || utils.isGeneratorFunction(func))) {
             return yield func.apply(controller,keys);
           }
-
+          
           let ret = func.apply(controller, keys);
 
           if (ret && utils.isYieldable(ret)) {
             return yield ret;
           }
 
-          //return ret;
         }]);
 
         router.register(name, route.pattern, [route.method], ...middlewares);

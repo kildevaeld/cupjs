@@ -4,14 +4,14 @@ import {Tasks} from '../tasks'
 
 module.exports = function *Controllers (app:Application) {
 
-  let controllerPath = app.config.controllers
+  let controllerPath = app.config.paths.controllers
 
   if (!controllerPath) return
 
   let task = new Tasks({serial:false})
 
   yield task.addFromPath(controllerPath);
-  console.log(task, controllerPath)
+  
   yield task.run( c => {
 
     app.register(c)

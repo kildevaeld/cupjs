@@ -57,55 +57,83 @@ export function camelize(str:string): string {
 }
 
 export function requireDir(path:string, iterator:any, ctx:any): Promise<void> {
-  
+
   return co(function *() {
-    
+
     let fullPath = nodePath.resolve(path)
-    
+
     let files = yield fs.readdir(path)
     files.sort();
     for (let i=0,ii=files.length;i<ii;i++) {
       let file = files[i];
-      
+
       let ext = nodePath.extname(file);
-      
+
       if (!~['.js'].indexOf(ext)) continue;
-      
+
       file = nodePath.join(fullPath, file)
       let data
       try {
-        data = require(file);  
+        data = require(file);
       } catch (e) {
-       
+
         continue
       }
-      
-      
-      
+
+
+
       if (isGenerator(iterator) || isGeneratorFunction(iterator)) {
-        yield iterator.call(ctx, data, file)  
+        yield iterator.call(ctx, data, file)
       } else {
-        
+
         let ret = iterator.call(ctx, data, file);
-        
+
         if (ret && isYieldable(ret)) {
           yield ret
         }
-        
+
       }
     }
-    
+
   });
-  
+
+}
+
+export interface Deferred {
+  reject(err?:Error)
+  resolve(result?:any)
+  done(err?:Error, resolve?:any)
+  promise: Promise
+}
+
+export function deferred () : Deferred {
+    let resolve, reject, promise = new Promise(function(res, rej) {
+        resolve = res;
+        reject = rej;
+    });
+
+
+  return {
+    reject: reject,
+    resolve: resolve,
+    promise: promise,
+    done: function (err, result) {
+        if (err) return reject(err);
+        resolve(result)
+    }
+  }
+
+
+
 }
 
 export function callFunc(fn:Function, ctx?:any, args:any[] = []) {
-    
+
     return co(function *() {
        if (isGenerator(fn) || isGeneratorFunction(fn)) {
          return yield _call(fn,ctx,args);
        } else {
-         
+
          let ret = _call(fn,ctx,args);
          if (!ret) return;
          if (ret && ret instanceof Error) {
@@ -113,14 +141,14 @@ export function callFunc(fn:Function, ctx?:any, args:any[] = []) {
          } else if (isYieldable(ret)) {
            return yield ret;
          }
-         
+
          return ret;
-       } 
+       }
     })
-   
-    
+
+
   }
-  
+
   function _call(fn:Function, ctx?:any, args:any[] = []): any {
     return fn.apply(ctx, args);
   }

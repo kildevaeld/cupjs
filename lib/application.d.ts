@@ -16,6 +16,9 @@ export interface ApplicationOptions {
     services?: {
         [key: string]: any;
     };
+    middlewares?: {
+        [key: string]: any;
+    };
 }
 export declare class Application extends Koa {
     private __initialized;
@@ -25,10 +28,11 @@ export declare class Application extends Koa {
     _container: DIContainer;
     private _serviceActivator;
     config: ApplicationOptions;
+    container: DIContainer;
     constructor(config?: ApplicationOptions);
     register(name?: string | FunctionConstructor, fn?: FunctionConstructor): Application;
     service<T extends Function>(service: string | T): T;
-    registerService(name?: string | Function, fn?: Function): void;
+    registerService(name?: string | Function, fn?: Function, async?: boolean): void;
     /**
      * Use middlewares
      * @param  {...Function} middleware One or more middleware functions

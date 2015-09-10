@@ -8,10 +8,10 @@ export const mServiceKey = 'cupjs:service'
 
 function test(){}
 if (!test.name) {
+	var regExp = /^\s*function\s*(\S*)\s*\(/
 	Object.defineProperty(Function.prototype, 'name', {
     get: function() {
-
-      var name = this.toString().match(/^\s*function\s*(\S*)\s*\(/)[1];
+      var name = this.toString().match(regExp)[1];
       // For better performance only parse once, and then cache the
       // result through a new accessor for repeated access.
       Object.defineProperty(this, 'name', { value: name });
@@ -65,9 +65,10 @@ export function namespace(pattern:string): ClassDecorator {
 	}
 }
 
-export function service(name?:string): ClassDecorator {
+export function service(name?:string, async:boolean = false): ClassDecorator {
 	return function <TFunction extends Function>(target: TFunction): TFunction | void {
-		Metadata.define(mServiceKey, name||target.name, target, undefined)
+    let data = {async:async, name: name||target.name}
+		Metadata.define(mServiceKey, data, target, undefined)
 		return void 0
 	}
 }

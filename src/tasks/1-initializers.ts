@@ -6,7 +6,7 @@ import {callFunc} from '../utils'
 module.exports = function *Initializers(app:Application) {
 
   let ff = callFunc;
-  let initializersPath = app.config.initializers
+  let initializersPath = app.config.paths.initializers
 
   if (!initializersPath) return
 

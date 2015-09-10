@@ -30,7 +30,7 @@ export default function *Middlewares (app:Application) {
 	let path = app.config.paths.public
 	if (path) {
 		path = nodePath.resolve(path);
-		path.use(assets(path, {defer:true}))
+		app.use(assets(path, {defer:true}))
 	}
 
 

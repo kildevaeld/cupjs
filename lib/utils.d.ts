@@ -29,4 +29,11 @@ export declare function isGenerator(obj: any): boolean;
 export declare function isGeneratorFunction(obj: any): boolean;
 export declare function camelize(str: string): string;
 export declare function requireDir(path: string, iterator: any, ctx: any): Promise<void>;
+export interface Deferred {
+    reject(err?: Error): any;
+    resolve(result?: any): any;
+    done(err?: Error, resolve?: any): any;
+    promise: Promise;
+}
+export declare function deferred(): Deferred;
 export declare function callFunc(fn: Function, ctx?: any, args?: any[]): Promise<any>;

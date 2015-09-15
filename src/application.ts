@@ -31,11 +31,11 @@ export interface ApplicationOptions {
 
 
 function normalizeConfig (config:ApplicationOptions = {}): ApplicationOptions {
-  
+
   if (!config.paths) config.paths = {}
   if (!config.services) config.services = {}
   if (!config.middlewares) config.middlewares = {}
-  
+
   return config
 }
 
@@ -47,7 +47,7 @@ export class Application extends Koa {
   _container: DIContainer
   private _serviceActivator: ServiceActivator
   config: ApplicationOptions
-  
+
   get container () : DIContainer {
     return this._container
   }
@@ -57,8 +57,8 @@ export class Application extends Koa {
     this.context = Object.create(Context)
     this._router = new Router()
     this._container = new DIContainer();
-    if (!config.paths) config.paths = {}
-    this.config = config
+
+    this.config = normalizeConfig(config);
     this._serviceActivator = new ServiceActivator(this);
   }
 
@@ -206,7 +206,7 @@ export class Application extends Koa {
 
          yield task(self)
       }).catch( e => {
-
+        console.log(e.stack);
         err = e;
       })
       //console.log(err)
@@ -294,13 +294,13 @@ export class Application extends Koa {
               return Promise.resolve(self.container.get(x));
             }
           })
-           
+
           keys = yield keys
-          
+
           if (func && (utils.isGenerator(func) || utils.isGeneratorFunction(func))) {
             return yield func.apply(controller,keys);
           }
-          
+
           let ret = func.apply(controller, keys);
 
           if (ret && utils.isYieldable(ret)) {

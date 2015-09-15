@@ -28,16 +28,17 @@
         "./src/context.ts",
         "./src/index.ts",
         "./src/interfaces.ts",
-        "./src/tasks.ts",
-        "./src/utils.ts",
-        "./src/service-activator.ts",
+        "./src/middleware/logger.ts",
+        "./src/middleware/profiler.ts",
         "./src/router/index.ts",
         "./src/router/route.ts",
-        "./src/middleware/logger.ts",
+        "./src/service-activator.ts",
+        "./src/tasks.ts",
         "./src/tasks/0-services.ts",
         "./src/tasks/1-initializers.ts",
         "./src/tasks/2-middlewares.ts",
         "./src/tasks/3-controllers.ts",
-        "./src/tasks/4-routes.ts"
+        "./src/tasks/4-routes.ts",
+        "./src/utils.ts"
     ]
 }

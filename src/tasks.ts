@@ -5,9 +5,12 @@ import co from './co'
 import * as nodePath from 'path'
 import * as utils from './utils'
 import * as babel from 'babel-core'
+import * as tsc from 'typescript'
+
 import dbg from 'debug'
 import {Cache} from './cache'
 const debug = dbg('cupjs:tasks');;
+
 
 export interface TasksOptions {
   serial?: boolean
@@ -42,18 +45,8 @@ export class Tasks {
         } else {
           ret = utils.callFunc(task, ctx);
         }
-        /*if (serial) {
-          
-          ret = yield ret
-          
-          results.push(ret)
-        } else {
-          
-          queue.push(ret);  
-        }*/
 
         serial ? results.push((yield ret)) : queue.push(ret)
-
 
       }
 
@@ -156,80 +149,78 @@ function *resolveFile(path: string): Iterator<any> {
       compileit = 'babel';
     }
   }
-  
+
   // Just regular javascript
   if (compileit === null) {
     return require(path);
   }
 
-  // check if compiled file already exists and is update to date  
+  if (/\.d.ts$/.test(path)) return null
+
+  // check if compiled file already exists and is update to date
   let md5 = yield md5Sum(path);
   let tmpFile = nodePath.join(dirname, "." + basename + '.compiled.js')
-  
-  if (yield fs.exists(tmpFile)) {  
+
+  if (yield fs.exists(tmpFile)) {
     if (md5 === cache.get(path)) {
       return require(tmpFile);
     }
   }
-  
 
-  let code: string = null;  
-  
+
+  let code: string = null;
+
   switch (compileit) {
-    case 'babel': 
-      code = yield compileBabel(path);
+    case 'babel':
+      code = yield compileBabelFile(path);
       break;
     case 'typescript':
-      code = compileTypescript(path);
+      code = yield compileTypescript(path);
       break;
-    case 'coffeescript'
-    
+    case 'coffeescript':
+      break;
   }
-  
+
   if (code == null) {
-    throw new Error('could not compile file');
-  } 
+    throw new Error('could not compile file ' + path);
+  }
 
   yield fs.writeFile(tmpFile, code);
   cache.set(path, md5);
   yield cache.save()
-  
+
   return require(tmpFile)
-
-  /*if (/^'use babel'/.test(firstline)) {
-    debug('use babel')
-
-    var result = babel.transform(yield fs.readFile(path, 'utf8'), {
-      optional: ['es7.decorators'],
-      blacklist: ['regenerator']
-    })
-
-    yield fs.writeFile(tmpFile, result.code);
-
-    cache.set(path, md5);
-    yield cache.save()
-
-    path = tmpFile
-
-  }
-
-  return require(path)*/
 
 }
 
-function * compileBabel (path: string): string {
+function * compileBabel(data: string): string {
   debug('use babel')
 
-    var result = babel.transform(yield fs.readFile(path, 'utf8'), {
-      optional: ['es7.decorators'],
-      blacklist: ['regenerator']
-    })
-    
-   return result.code
-} 
+  var result = babel.transform(data, {
+    optional: ['es7.decorators'],
+    blacklist: ['regenerator']
+  })
 
-function compileTypescript (path: string): string {
-  
+  return result.code
+}
+
+function * compileBabelFile (path:string): Iterator<string> {
+  let data = yield fs.readFile(path, 'utf8')
+  let str = yield compileBabel(data);
+  return str
+}
+
+function * compileTypescript(path: string): Iterator<string> {
+
+  let data = yield fs.readFile(path, 'utf8');
+
+
+  let result = tsc.transpile(data, {
+    experimentalDecorators: true,
+    target: tsc.ScriptTarget.ES6
+  });
+
+  return compileBabel(result);
 }
 
 function readFirstLine(path: string): Promise<string> {

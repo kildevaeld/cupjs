@@ -2,8 +2,10 @@
 const moby = require('./lib');
 
 const app = new moby.Application({
-	controllers: './example/controllers',
-	initializers: './example/initializer'
+  paths:{
+  controllers: './example/controllers',
+  initializers: './example/initializer'
+}
 });
 
 

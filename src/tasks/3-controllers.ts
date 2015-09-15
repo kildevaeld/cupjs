@@ -11,7 +11,7 @@ module.exports = function *Controllers (app:Application) {
   let task = new Tasks({serial:false})
 
   yield task.addFromPath(controllerPath);
-  
+
   yield task.run( c => {
 
     app.register(c)
